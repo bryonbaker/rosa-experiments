@@ -4,9 +4,10 @@
 
 echo "Script to add a bare metal worker node to a cluster."
 echo "This script requires that you only have one ROSA cluster in your account."
+echo "Usage: ./create-bm-machine-pool.sh [--profile=<aws-profile-name>] [--region=<aws-region>]"
 
 # Retrieve the output of 'rosa list clusters' - skip the heading
-cluster_list=$(rosa list clusters | tail -n +2)
+cluster_list=$(rosa list clusters $1 $2 | tail -n +2)
 echo $cluster_list
 
 # Count the number of lines in the output
@@ -33,17 +34,13 @@ fi
 # Set the replicas to zero to create a machine pool with no instances.
 ec2_instance_type="c5.metal"
 echo "Adding the bare metal instance type $ec2_instance_type to the cluster $cluster_id."
-rosa create machinepool --cluster="$cluster_id" --name="bare-metal-machinepool" --replicas=0 --instance-type="$ec2_instance_type" --disk-size=128GiB
-
-# Scale up the machine pool - (demonstrating the other important ROSA command)
-# c5.metal is a BIG and expensive machine so only add one replica
-rosa edit machinepool --cluster="$cluster_id" --replicas=1 --labels="my-type"="metal" bare-metal-machinepool
+rosa create machinepool --cluster="$cluster_id" $1 $2 --name="bare-metal-machinepool" --replicas=0 --instance-type="$ec2_instance_type" --disk-size=128GiB
 
 read -p "Do you want to add the $ec2_instance_type replica now? (Y/N): " choice
 if [ "$choice" = "Y" ] || [ "$choice" = "y" ]; then
     # Scale up the machine pool - (demonstrating the other important ROSA command)
     # c5.metal is a BIG and expensive machine so only add one replica
-    rosa edit machinepool --cluster="$cluster_id" --replicas=1 --labels="my-type"="metal" bare-metal-machinepool
+    rosa edit machinepool --cluster="$cluster_id" $1 $2 --replicas=1 --labels="my-machine-type"="metal" bare-metal-machinepool
 fi
 
-rosa list machinepools --cluster="$cluster_id"
+rosa list machinepools --cluster="$cluster_id" $1 $2
