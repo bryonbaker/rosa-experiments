@@ -11,7 +11,7 @@ extract_sections() {
     grep -oP '\[\K[^]]+' "$file"
 }
 
-# Display the menu
+# Display the AWS Profile Selection menu
 display_aws_profile_menu() {
     local file="$1"
     local options=()
@@ -25,7 +25,7 @@ display_aws_profile_menu() {
 }
 
 
-# Function to find the line number of a text enclosed in square brackets
+# Find the line number of a text enclosed in square brackets
 find_line_number() {
     local file="$1"
     local search_text="$2"
@@ -42,7 +42,7 @@ find_line_number() {
     fi
 }
 
-# Function to return the line following a specific line in a file
+# Utility to return the line following a specific line in a file
 get_next_line() {
     local file="$1"
     local line_number="$2"
@@ -51,6 +51,7 @@ get_next_line() {
     awk "NR == $((line_number + 1))" "$file"
 }
 
+# Using the profile, retrieve the associated aws region.
 get_aws_region() {
     local file="$1"
     local search_text="$2"
@@ -102,13 +103,13 @@ get_aws_profile() {
     fi
 }
 
-# Function to retrieve list and filter it
+# Retrieve the instance types and filter based on preference
 retrieve_list() {
     local node_type=$1
     rosa list instance-types --profile="$aws_profile" --region="$aws_region" | grep "$node_type"
 }
 
-# Function to display the interactive menu
+# Display the interactive menu to get the instnce type
 display_machine_instance_types_menu() {
     local options=()
     local i=1
@@ -121,7 +122,7 @@ display_machine_instance_types_menu() {
     echo "0. Exit"
 }
 
-# Function to prompt for node type
+# Prompt for node type
 prompt_node_type() {
     local node_type
     while true; do
@@ -137,7 +138,7 @@ prompt_node_type() {
     echo "$node_type"
 }
 
-# Function to prompt for number of replicas
+# Prompt for number of replicas
 prompt_replicas() {
     local replicas
     while true; do
