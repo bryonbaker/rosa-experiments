@@ -16,6 +16,7 @@ display_aws_profile_menu() {
     local file="$1"
     local options=()
     local i=1
+    echo "Select the AWS Profile to use:"
     while IFS= read -r section; do
         echo "$i. $section"
         options+=("$section")
@@ -60,7 +61,7 @@ get_aws_region() {
     local line_number
     line_number=$(find_line_number "$file" "$search_text")
 
-    echo "Line number is $line_number"
+    # echo "I: Line number is $line_number"
 
 
     # Check if the search text was found
@@ -70,12 +71,13 @@ get_aws_region() {
         next_line=$(get_next_line "$file" "$line_number")
 
         # Print the next line
-        echo "Next line after '$search_text': '$next_line'"
+        # echo "I: Next line after '$search_text': '$next_line'"
         local region
         aws_region=$(echo "$next_line" | awk '{print $NF}')
-        echo "Region is: $aws_region"
+        # echo "I: Region is: $aws_region"
     else
         echo "Search text '$search_text' not found in the $file."
+        exit 1
     fi
 }
 
@@ -84,7 +86,6 @@ get_aws_profile() {
     local file="$1"
 
     local chosen_option
-    echo "Select the AWS Profile to use:"
     read -rp "Enter your choice: " chosen_option
 
     if [[ $chosen_option -eq 0 ]]; then
@@ -95,12 +96,14 @@ get_aws_profile() {
     local selected_section
     selected_section=$(extract_sections "$file" | sed -n "${chosen_option}p")
     aws_profile=$selected_section
-    echo "Selected: $aws_profile"
+    # echo "I: Selected: $aws_profile"
 
     if [[ -z $aws_profile ]]; then
         echo "Invalid choice. Please select a valid profile."
         exit 0
     fi
+
+    echo 
 }
 
 # Retrieve the instance types and filter based on preference
@@ -113,7 +116,8 @@ retrieve_list() {
 display_machine_instance_types_menu() {
     local options=()
     local i=1
-    echo "Machine Instance Types:"
+    echo "Retrieving available '$node_type' machine-instance types..."
+    echo
     while IFS= read -r line; do
         echo "$i. $line"
         options+=("$line")
@@ -151,7 +155,7 @@ prompt_replicas() {
         fi
     done
 
-    echo "$replicas"
+    echo "$replicas" # Return the number of replicas
 }
 
 provision_machine_pool() {
@@ -193,6 +197,7 @@ provision_machine_pool() {
     echo "Adding the instance type $ec2_instance_type to the cluster $cluster_id. Machine pool name $machinepool"
     rosa create machinepool --cluster="$cluster_id" --profile="$aws_profile" --region="$aws_region" --name="$machinepool" --replicas=0 --instance-type="$ec2_instance_type" --disk-size=128GiB
 
+    echo
     local choice
     read -p "Do you want to add the $replicas replica(s) of the instance type: $ec2_instance_type now? (Y/N): " choice
     if [ "$choice" = "Y" ] || [ "$choice" = "y" ]; then
@@ -201,13 +206,35 @@ provision_machine_pool() {
         rosa edit machinepool --cluster="$cluster_id" --profile="$aws_profile" --region="$aws_region" --replicas="$replicas" --labels="custom-machine-type"="$machinepool" "$machinepool"
     fi
 
+    echo
     rosa list machinepools --cluster="$cluster_id" --profile="$aws_profile" --region="$aws_region" 
+}
+
+get_instance_type() {
+    local chosen_instance
+    read -rp "Select instance type: " chosen_instance
+
+    if [[ $chosen_instance -eq 0 ]]; then
+        echo "Exiting..."
+        exit 0
+    fi
+
+    local selection
+    selection=$(retrieve_list "$node_type" | sed -n "${chosen_instance}p")
+
+    echo $selection
 }
 
 # Main function
 main() {
-    echo "Script to add a bare metal or GPU-enabed worker node to a cluster."
+    echo "Script to add a bare metal or GPU-enabed worker node to a ROSA cluster."
+    echo
     echo "This script requires that you only have one ROSA cluster in your account."
+    echo "Please ensure that you have the AWS v2 and ROSA CLI installed and configured."
+    echo 
+    echo "If you have multiple aacounts configured in the AWS CLI then the scrtipt "
+    echo "will prompt you to select which account you want to work with."
+    echo 
 
     local aws_credentials_file="$HOME/.aws/credentials"
     local aws_config_file="$HOME/.aws/config"
@@ -220,29 +247,24 @@ main() {
 
     get_aws_region "$aws_config_file" "$aws_profile"
     echo "Region for profile $aws_profile is: $aws_region"
+    echo
 
     local node_type
     node_type=$(prompt_node_type)
+    echo "Selected node type: $node_type"
 
     display_machine_instance_types_menu "$node_type"
 
-    local chosen_instance
-    read -rp "Enter your choice: " chosen_instance
-
-    if [[ $chosen_instance -eq 0 ]]; then
-        echo "Exiting..."
-        exit 0
-    fi
-
     local selection
-    selection=$(retrieve_list "$node_type" | sed -n "${chosen_instance}p")
+    selection=$(get_instance_type)
+
+
 
     # Extracting the first column from the selection
     local aws_instance_type
     aws_instance_type=$(echo "$selection" | awk '{print $1}')
 
     echo "You selected: $aws_instance_type"
-
 
     local replicas
     replicas=$(prompt_replicas)
