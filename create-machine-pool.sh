@@ -232,7 +232,7 @@ main() {
     echo "This script requires that you only have one ROSA cluster in your account."
     echo "Please ensure that you have the AWS v2 and ROSA CLI installed and configured."
     echo 
-    echo "If you have multiple aacounts configured in the AWS CLI then the scrtipt "
+    echo "If you have multiple accounts configured in the AWS CLI then the scrtipt "
     echo "will prompt you to select which account you want to work with."
     echo 
 
