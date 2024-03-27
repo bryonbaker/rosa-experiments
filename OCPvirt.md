@@ -39,6 +39,12 @@ spec:
 ```
 
 ### Set the Node Placement rules on for the Hyperconverged Operator
+Note: Before doing this you need to be aware that this step will make it problematic to scale the bare metal nodes to zero to save costs.  
+
+If you want to scale the bare metal nodes down to zero DO NOT put node selectors on the operator (only use node selectors for the VMs). **The node selectors for the operator block the node being drained when you shut it down.**  
+
+Then, to scale the nodes to zero you simply stop the VMs and edit the machinepool replica count to zero.
+
 ```
   infra:
     nodePlacement:
@@ -103,14 +109,120 @@ metadata:
           "min": 1073741824
         }
       ]
-  resourceVersion: '8902012'
-  name: fedora-yappy-hawk
+  resourceVersion: '8925903'
+  name: fedora-node-selected
+  uid: 6cfbee73-6529-4bfe-92e1-4a794720fa57
+  creationTimestamp: '2024-03-24T01:36:21Z'
   generation: 1
-  namespace: default
+  managedFields:
+    - apiVersion: kubevirt.io/v1alpha3
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            'f:kubevirt.io/latest-observed-api-version': {}
+            'f:kubevirt.io/storage-observed-api-version': {}
+          'f:finalizers':
+            .: {}
+            'v:"kubevirt.io/virtualMachineControllerFinalize"': {}
+      manager: Go-http-client
+      operation: Update
+      time: '2024-03-24T01:36:21Z'
+    - apiVersion: kubevirt.io/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:kubemacpool.io/transaction-timestamp': {}
+            'f:vm.kubevirt.io/validations': {}
+          'f:labels':
+            .: {}
+            'f:app': {}
+            'f:vm.kubevirt.io/template': {}
+            'f:vm.kubevirt.io/template.namespace': {}
+            'f:vm.kubevirt.io/template.revision': {}
+            'f:vm.kubevirt.io/template.version': {}
+        'f:spec':
+          .: {}
+          'f:dataVolumeTemplates': {}
+          'f:running': {}
+          'f:template':
+            .: {}
+            'f:metadata':
+              .: {}
+              'f:annotations':
+                .: {}
+                'f:vm.kubevirt.io/flavor': {}
+                'f:vm.kubevirt.io/os': {}
+                'f:vm.kubevirt.io/workload': {}
+              'f:creationTimestamp': {}
+              'f:labels':
+                .: {}
+                'f:kubevirt.io/domain': {}
+                'f:kubevirt.io/size': {}
+            'f:spec':
+              .: {}
+              'f:domain':
+                .: {}
+                'f:cpu':
+                  .: {}
+                  'f:cores': {}
+                  'f:sockets': {}
+                  'f:threads': {}
+                'f:devices':
+                  .: {}
+                  'f:disks': {}
+                  'f:interfaces': {}
+                  'f:networkInterfaceMultiqueue': {}
+                  'f:rng': {}
+                'f:features':
+                  .: {}
+                  'f:acpi': {}
+                  'f:smm':
+                    .: {}
+                    'f:enabled': {}
+                'f:firmware':
+                  .: {}
+                  'f:bootloader':
+                    .: {}
+                    'f:efi': {}
+                'f:machine':
+                  .: {}
+                  'f:type': {}
+                'f:resources':
+                  .: {}
+                  'f:requests':
+                    .: {}
+                    'f:memory': {}
+              'f:evictionStrategy': {}
+              'f:networks': {}
+              'f:nodeSelector':
+                .: {}
+                'f:custom-machine-type': {}
+              'f:terminationGracePeriodSeconds': {}
+              'f:volumes': {}
+      manager: Mozilla
+      operation: Update
+      time: '2024-03-24T01:36:21Z'
+    - apiVersion: kubevirt.io/v1alpha3
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          .: {}
+          'f:conditions': {}
+          'f:created': {}
+          'f:printableStatus': {}
+          'f:volumeSnapshotStatuses': {}
+      manager: Go-http-client
+      operation: Update
+      subresource: status
+      time: '2024-03-24T01:36:25Z'
+  namespace: vm-tests
   finalizers:
     - kubevirt.io/virtualMachineControllerFinalize
   labels:
-    app: fedora-yappy-hawk
+    app: fedora-node-selected
     vm.kubevirt.io/template: fedora-server-small
     vm.kubevirt.io/template.namespace: openshift
     vm.kubevirt.io/template.revision: '1'
@@ -120,29 +232,18 @@ spec:
     - apiVersion: cdi.kubevirt.io/v1beta1
       kind: DataVolume
       metadata:
-        annotations:
-          cdi.kubevirt.io/storage.bind.immediate.requested: 'true'
-        name: fedora-yappy-hawk
-      spec:
-        source:
-          blank: {}
-        storage:
-          resources:
-            requests:
-              storage: 30Gi
-    - metadata:
         creationTimestamp: null
-        name: fedora-yappy-hawk-installation-cdrom
+        name: fedora-node-selected
       spec:
-        source:
-          http:
-            url: >-
-              https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
         storage:
           resources:
             requests:
               storage: 30Gi
-  running: false
+  running: true
   template:
     metadata:
       annotations:
@@ -151,30 +252,24 @@ spec:
         vm.kubevirt.io/workload: server
       creationTimestamp: null
       labels:
-        kubevirt.io/domain: fedora-yappy-hawk
+        kubevirt.io/domain: fedora-node-selected
         kubevirt.io/size: small
     spec:
       domain:
         cpu:
-          cores: 2
+          cores: 1
           sockets: 1
           threads: 1
         devices:
           disks:
-            - bootOrder: 2
-              disk:
+            - disk:
                 bus: virtio
               name: rootdisk
-            - bootOrder: 3
-              disk:
+            - disk:
                 bus: virtio
               name: cloudinitdisk
-            - bootOrder: 1
-              cdrom:
-                bus: sata
-              name: installation-cdrom
           interfaces:
-            - macAddress: '02:83:ac:00:00:01'
+            - macAddress: '02:83:ac:00:00:05'
               masquerade: {}
               model: virtio
               name: default
@@ -191,7 +286,8 @@ spec:
           type: pc-q35-rhel9.2.0
         resources:
           requests:
-            memory: 8Gi
+            memory: 2Gi
+      evictionStrategy: LiveMigrate
       networks:
         - name: default
           pod: {}
@@ -200,16 +296,34 @@ spec:
       terminationGracePeriodSeconds: 180
       volumes:
         - dataVolume:
-            name: fedora-yappy-hawk
+            name: fedora-node-selected
           name: rootdisk
         - cloudInitNoCloud:
             userData: |-
               #cloud-config
               user: fedora
-              password: m6mu-kuq7-nsn3
+              password: iikd-7rjl-sb6e
               chpasswd: { expire: False }
           name: cloudinitdisk
-        - dataVolume:
-            name: fedora-yappy-hawk-installation-cdrom
-          name: installation-cdrom
+status:
+  conditions:
+    - lastProbeTime: '2024-03-24T01:36:22Z'
+      lastTransitionTime: '2024-03-24T01:36:22Z'
+      message: virt-launcher pod has not yet been scheduled
+      reason: PodNotExists
+      status: 'False'
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: null
+      status: 'True'
+      type: Provisioning
+  created: true
+  printableStatus: Provisioning
+  volumeSnapshotStatuses:
+    - enabled: true
+      name: rootdisk
+    - enabled: false
+      name: cloudinitdisk
+      reason: 'Snapshot is not supported for this volumeSource type [cloudinitdisk]'
+
 ```
