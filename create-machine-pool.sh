@@ -194,7 +194,7 @@ provision_machine_pool() {
 
     # Create machine pool using the captured cluster ID
     local machinepool
-    machinepool="${ec2_instance_type//./-}-machinepool"     # Create a machine pool name using the instance type. Replace . with -
+    machinepool="${ec2_instance_type//./-}-mp"     # Create a machine pool name using the instance type. Replace . with -
     echo "Adding the instance type $ec2_instance_type to the cluster $cluster_id. Machine pool name $machinepool"
     rosa create machinepool --cluster="$cluster_id" --profile="$aws_profile" --region="$aws_region" --name="$machinepool" --replicas=0 --instance-type="$ec2_instance_type" --disk-size=128GiB
 
