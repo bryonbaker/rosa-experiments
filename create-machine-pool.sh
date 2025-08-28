@@ -166,7 +166,8 @@ provision_machine_pool() {
 
     # Retrieve the output of 'rosa list clusters' - skip the heading
     local cluster_list
-    cluster_list=$(rosa list clusters --profile="$aws_profile" --region="$aws_region" | tail -n +2)
+    # cluster_list=$(rosa list clusters --profile="$aws_profile" --region="$aws_region" | tail -n +2)
+    cluster_list=$(rosa list clusters --profile="$aws_profile"  | tail -n +2)
     echo $cluster_list
 
     # Count the number of lines in the output
